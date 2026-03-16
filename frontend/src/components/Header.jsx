@@ -1,30 +1,46 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { notificationAPI } from "../services/api";
 
 function Header() {
 
   const [user,setUser] = useState(null);
+  const [role,setRole] = useState(null);
+  const [notifications,setNotifications] = useState([]);
+  const [open,setOpen] = useState(false);
 
   useEffect(() => {
 
     const token = localStorage.getItem("token");
+    const storedRole = localStorage.getItem("role");
 
     if(token){
-
       try{
-
         const payload = JSON.parse(atob(token.split(".")[1]));
-        const email = payload.sub;
+        setUser(payload.sub);
+        setRole(storedRole);
 
-        setUser(email);
+        loadNotifications();
 
       }catch(err){
         console.log("Invalid token");
       }
-
     }
 
   }, []);
+
+  const loadNotifications = async () => {
+
+    try{
+
+      const res = await notificationAPI.get("/notifications");
+      setNotifications(res.data);
+
+    }catch(err){
+      console.log(err);
+    }
+
+  };
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -35,6 +51,7 @@ function Header() {
   const firstLetter = user ? user.charAt(0).toUpperCase() : "";
 
   return (
+
     <header style={styles.header}>
 
       <h2 style={styles.logo}>Cloud Event System</h2>
@@ -42,86 +59,189 @@ function Header() {
       <nav style={styles.nav}>
 
         <Link style={styles.link} to="/">Home</Link>
+
         <Link style={styles.link} to="/events">Events</Link>
+
+        {user && role !== "admin" && (
+          <Link style={styles.link} to="/profile">
+            My Bookings
+          </Link>
+        )}
+
+        {role === "admin" && (
+          <Link style={styles.link} to="/admin">
+            Dashboard
+          </Link>
+        )}
 
         {!user && (
           <Link style={styles.link} to="/login">Login</Link>
         )}
 
         {user && (
-          <div style={styles.userArea}>
 
-            <div style={styles.avatar}>
-              {firstLetter}
+          <>
+            {/* Notification Bell */}
+
+            <div style={styles.bellContainer}>
+
+              <div
+                style={styles.bell}
+                onClick={()=>setOpen(!open)}
+              >
+                🔔
+
+                {notifications.length > 0 && (
+                  <span style={styles.badge}>
+                    {notifications.length}
+                  </span>
+                )}
+
+              </div>
+
+              {open && (
+
+                <div style={styles.dropdown}>
+
+                  {notifications.length === 0 && (
+                    <p style={styles.noNotif}>No notifications</p>
+                  )}
+
+                  {notifications.map((n)=>(
+                    <div key={n.id} style={styles.notification}>
+                      {n.message}
+                    </div>
+                  ))}
+
+                </div>
+
+              )}
+
             </div>
 
-            <button style={styles.logout} onClick={logout}>
-              Logout
-            </button>
 
-          </div>
+            <div style={styles.userArea}>
+
+              <div style={styles.avatar}>
+                {firstLetter}
+              </div>
+
+              <button style={styles.logout} onClick={logout}>
+                Logout
+              </button>
+
+            </div>
+
+          </>
+
         )}
 
       </nav>
 
     </header>
+
   );
 }
 
+
 const styles = {
 
-  header:{
-    display:"flex",
-    justifyContent:"space-between",
-    alignItems:"center",
-    padding:"20px 40px",
-    background:"#0b1220",
-    color:"#fff"
-  },
+header:{
+  display:"flex",
+  justifyContent:"space-between",
+  alignItems:"center",
+  padding:"20px 40px",
+  background:"#0b1220",
+  color:"#fff"
+},
 
-  logo:{
-    margin:0
-  },
+logo:{ margin:0 },
 
-  nav:{
-    display:"flex",
-    alignItems:"center"
-  },
+nav:{
+  display:"flex",
+  alignItems:"center"
+},
 
-  link:{
-    marginLeft:"20px",
-    color:"#fff",
-    textDecoration:"none"
-  },
+link:{
+  marginLeft:"20px",
+  color:"#fff",
+  textDecoration:"none"
+},
 
-  userArea:{
-    display:"flex",
-    alignItems:"center",
-    marginLeft:"20px"
-  },
+bellContainer:{
+  position:"relative",
+  marginLeft:"20px",
+  cursor:"pointer"
+},
 
-  avatar:{
-    width:"36px",
-    height:"36px",
-    borderRadius:"50%",
-    background:"linear-gradient(135deg,#0ea5a3,#3bd3c8)",
-    display:"flex",
-    alignItems:"center",
-    justifyContent:"center",
-    fontWeight:"600",
-    color:"#042020",
-    marginLeft:"15px"
-  },
+bell:{
+  fontSize:"20px",
+  position:"relative"
+},
 
-  logout:{
-    marginLeft:"10px",
-    background:"transparent",
-    border:"1px solid rgba(255,255,255,.2)",
-    color:"#fff",
-    padding:"6px 10px",
-    borderRadius:"6px",
-    cursor:"pointer"
-  }
+badge:{
+  position:"absolute",
+  top:"-6px",
+  right:"-10px",
+  background:"#3bd3c8",
+  color:"#042020",
+  borderRadius:"50%",
+  padding:"2px 6px",
+  fontSize:"12px",
+  fontWeight:"600"
+},
+
+dropdown:{
+  position:"absolute",
+  top:"35px",
+  right:"0",
+  width:"260px",
+  background:"#111827",
+  border:"1px solid rgba(255,255,255,.1)",
+  borderRadius:"10px",
+  padding:"10px",
+  zIndex:100
+},
+
+notification:{
+  padding:"8px",
+  borderBottom:"1px solid rgba(255,255,255,.08)",
+  fontSize:"14px"
+},
+
+noNotif:{
+  fontSize:"14px",
+  color:"#9fbcbc"
+},
+
+userArea:{
+  display:"flex",
+  alignItems:"center",
+  marginLeft:"15px"
+},
+
+avatar:{
+  width:"36px",
+  height:"36px",
+  borderRadius:"50%",
+  background:"linear-gradient(135deg,#0ea5a3,#3bd3c8)",
+  display:"flex",
+  alignItems:"center",
+  justifyContent:"center",
+  fontWeight:"600",
+  color:"#042020",
+  marginLeft:"10px"
+},
+
+logout:{
+  marginLeft:"10px",
+  background:"transparent",
+  border:"1px solid rgba(255,255,255,.2)",
+  color:"#fff",
+  padding:"6px 10px",
+  borderRadius:"6px",
+  cursor:"pointer"
+}
 
 };
 

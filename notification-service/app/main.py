@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
 from . import models, schemas
+from .security import verify_token
+
 
 app = FastAPI(title="Notification Service")
 
@@ -17,8 +19,15 @@ def get_db():
         db.close()
 
 
+# -----------------------------
+# Create Notification
+# -----------------------------
+
 @app.post("/notify", response_model=schemas.NotificationResponse)
-def send_notification(data: schemas.NotificationCreate, db: Session = Depends(get_db)):
+def send_notification(
+    data: schemas.NotificationCreate,
+    db: Session = Depends(get_db)
+):
 
     notification = models.Notification(
         user_email=data.user_email,
@@ -35,6 +44,20 @@ def send_notification(data: schemas.NotificationCreate, db: Session = Depends(ge
     return notification
 
 
+# -----------------------------
+# Get Notifications for Logged User
+# -----------------------------
+
 @app.get("/notifications")
-def get_notifications(db: Session = Depends(get_db)):
-    return db.query(models.Notification).all()
+def get_notifications(
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+
+    user_email = token_data.get("sub")
+
+    notifications = db.query(models.Notification).filter(
+        models.Notification.user_email == user_email
+    ).order_by(models.Notification.id.desc()).all()
+
+    return notifications

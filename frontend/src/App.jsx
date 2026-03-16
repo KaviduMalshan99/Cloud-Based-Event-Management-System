@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Events from "./pages/Events";
+import Profile from "./pages/Profile";
 
 /* Admin Pages */
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -29,6 +30,8 @@ function App(){
         <Route path="/register" element={<Register />} />
 
         <Route path="/events" element={<Events/>} />
+
+        <Route path="/profile" element={<Profile />} />
 
         {/* Admin Panel */}
 
