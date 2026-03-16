@@ -8,12 +8,14 @@ app = FastAPI(title="Event Service")
 
 Base.metadata.create_all(bind=engine)
 
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
 
 @app.post("/events", response_model=schemas.EventResponse)
 def create_event(
@@ -27,6 +29,8 @@ def create_event(
     new_event = models.Event(
         title=event.title,
         description=event.description,
+        location=event.location,
+        event_date=event.event_date,
         capacity=event.capacity
     )
 
@@ -36,6 +40,37 @@ def create_event(
 
     return new_event
 
-@app.get("/events")
+
+@app.get("/events", response_model=list[schemas.EventResponse])
 def get_events(db: Session = Depends(get_db)):
     return db.query(models.Event).all()
+
+
+@app.get("/events/{event_id}", response_model=schemas.EventResponse)
+def get_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    return event
+
+
+@app.delete("/events/{event_id}")
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    if token_data.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    db.delete(event)
+    db.commit()
+
+    return {"message": "Event deleted successfully"}
