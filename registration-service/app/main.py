@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import requests
 
@@ -6,7 +7,35 @@ from .database import engine, Base, SessionLocal
 from . import models, schemas
 from .security import verify_token
 
+
+# -----------------------------
+# App Initialization
+# -----------------------------
+
 app = FastAPI(title="Registration Service")
+
+
+# -----------------------------
+# CORS Configuration
+# -----------------------------
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# -----------------------------
+# Database Setup
+# -----------------------------
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,40 +48,56 @@ def get_db():
         db.close()
 
 
-@app.post("/register-event")
+# -----------------------------
+# Register for Event
+# -----------------------------
+
+@app.post("/register")
 def register_event(
     data: schemas.RegisterEvent,
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
+
     user_email = token_data.get("sub")
 
-    # Check event exists by calling Event Service
+    # -----------------------------
+    # Check event exists
+    # -----------------------------
+
     try:
-        event_response = requests.get("http://event-service:8000/events")
-    except requests.exceptions.RequestException:
+        event_response = requests.get(
+            f"http://event-service:8000/events/{data.event_id}",
+            timeout=5
+        )
+    except requests.exceptions.RequestException as e:
+        print("ERROR contacting Event Service:", e)
         raise HTTPException(status_code=503, detail="Event service unavailable")
 
     if event_response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Event service error")
-
-    events = event_response.json()
-
-    event_exists = any(event["id"] == data.event_id for event in events)
-
-    if not event_exists:
         raise HTTPException(status_code=404, detail="Event not found")
 
+    event = event_response.json()
+
+    # -----------------------------
     # Prevent duplicate registration
+    # -----------------------------
+
     existing = db.query(models.Registration).filter(
         models.Registration.event_id == data.event_id,
         models.Registration.user_email == user_email
     ).first()
 
     if existing:
-        raise HTTPException(status_code=400, detail="Already registered for this event")
+        raise HTTPException(
+            status_code=400,
+            detail="Already registered for this event"
+        )
 
+    # -----------------------------
     # Save registration
+    # -----------------------------
+
     new_registration = models.Registration(
         event_id=data.event_id,
         user_email=user_email
@@ -62,14 +107,18 @@ def register_event(
     db.commit()
     db.refresh(new_registration)
 
-    # Call Notification Service
+    # -----------------------------
+    # Notify Notification Service
+    # -----------------------------
+
     try:
         requests.post(
-            "http://notification-service:8000/notify",
+            "http://notification-service:8004/notify",
             json={
                 "user_email": user_email,
-                "message": f"You have successfully registered for event {data.event_id}"
-            }
+                "message": f"You successfully registered for {event['title']}"
+            },
+            timeout=5
         )
     except requests.exceptions.RequestException:
         print("Notification service unavailable")
@@ -81,6 +130,39 @@ def register_event(
     }
 
 
+# -----------------------------
+# Get registrations of logged user
+# -----------------------------
+
 @app.get("/registrations")
-def get_registrations(db: Session = Depends(get_db)):
-    return db.query(models.Registration).all()
+def get_registrations(
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+
+    user_email = token_data.get("sub")
+
+    registrations = db.query(models.Registration).filter(
+        models.Registration.user_email == user_email
+    ).all()
+
+    return registrations
+
+
+# -----------------------------
+# Admin - Get All Registrations
+# -----------------------------
+
+@app.get("/admin/registrations")
+def get_all_registrations(
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+
+    # allow only admin
+    if token_data.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    registrations = db.query(models.Registration).all()
+
+    return registrations

@@ -1,10 +1,35 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .database import engine, Base, SessionLocal
 from . import models, schemas
 from .security import verify_token
 
+
 app = FastAPI(title="Event Service")
+
+
+# -----------------------------
+# CORS Configuration
+# -----------------------------
+
+origins = [
+    "http://localhost:5173",  # Vite frontend
+    "http://127.0.0.1:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,   # allow frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# -----------------------------
+# Database Setup
+# -----------------------------
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,12 +42,17 @@ def get_db():
         db.close()
 
 
+# -----------------------------
+# Create Event (Admin only)
+# -----------------------------
+
 @app.post("/events", response_model=schemas.EventResponse)
 def create_event(
     event: schemas.EventCreate,
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
+
     if token_data.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
@@ -41,13 +71,22 @@ def create_event(
     return new_event
 
 
+# -----------------------------
+# Get All Events
+# -----------------------------
+
 @app.get("/events", response_model=list[schemas.EventResponse])
 def get_events(db: Session = Depends(get_db)):
     return db.query(models.Event).all()
 
 
+# -----------------------------
+# Get Single Event
+# -----------------------------
+
 @app.get("/events/{event_id}", response_model=schemas.EventResponse)
 def get_event(event_id: int, db: Session = Depends(get_db)):
+
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
 
     if not event:
@@ -56,12 +95,17 @@ def get_event(event_id: int, db: Session = Depends(get_db)):
     return event
 
 
+# -----------------------------
+# Delete Event (Admin only)
+# -----------------------------
+
 @app.delete("/events/{event_id}")
 def delete_event(
     event_id: int,
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
+
     if token_data.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 

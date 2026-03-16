@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
@@ -6,7 +7,29 @@ from . import models, schemas, security
 
 app = FastAPI(title="Auth Service")
 
-# Create database tables
+
+# -----------------------------
+# CORS Configuration
+# -----------------------------
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# -----------------------------
+# Database Setup
+# -----------------------------
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -18,7 +41,10 @@ def get_db():
         db.close()
 
 
+# -----------------------------
 # Register User
+# -----------------------------
+
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
@@ -43,7 +69,10 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 
-# Login using email
+# -----------------------------
+# Login
+# -----------------------------
+
 @app.post("/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
@@ -61,11 +90,15 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
     return {
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": db_user.role
     }
 
 
-# Token verification endpoint
+# -----------------------------
+# Token Verification
+# -----------------------------
+
 @app.get("/verify-token")
 def verify_token(token: str):
 
@@ -79,3 +112,18 @@ def verify_token(token: str):
         "user": payload["sub"],
         "role": payload["role"]
     }
+
+
+# -----------------------------
+# Get All Users
+# -----------------------------
+
+@app.get("/users")
+def get_users(db: Session = Depends(get_db)):
+
+    users = db.query(models.User).all()
+
+    if not users:
+        return {"message": "No users found"}
+
+    return users
