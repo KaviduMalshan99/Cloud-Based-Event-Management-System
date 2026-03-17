@@ -1,11 +1,8 @@
-build system: 
-docker-compose down
-docker-compose up --build
+You’ve come a long way since that first version. The system you have now is no longer just a backend demo—it’s a **complete, usable platform** with a real user journey. The document should reflect that maturity.
 
+I’ll give you a **clean, updated version** that you can directly submit or share with your team.
 
-database login: docker exec -it event_postgres psql -U admin
-
-
+---
 
 # 📘 Cloud-Based Event Management System
 
@@ -15,365 +12,294 @@ database login: docker exec -it event_postgres psql -U admin
 
 # 🏗 1. Project Overview
 
-This project implements a secure, containerized, microservice-based event management system deployed using Docker (Cloud deployment later via AWS ECS).
+This project implements a **full-stack, cloud-ready event management platform** using a **microservices architecture**.
 
-The system is divided into **4 independent microservices**, each with its own database and responsibility.
+The system is fully containerized using Docker and includes both:
+
+- ✅ **Backend (4 microservices)**
+- ✅ **Frontend (React web application)**
+
+Users can:
+
+- Browse events
+- Register for events
+- View their bookings
+- Receive notifications
+
+Admins can:
+
+- Manage events
+- View all registrations
 
 ---
 
 # 🧩 2. Microservices Breakdown
 
-| Service              | Owner     | Responsibility                               | Database          |
-| -------------------- | --------- | -------------------------------------------- | ----------------- |
-| Auth Service         | Student 1 | User registration, login, JWT authentication | `auth_db`         |
-| Event Service        | Student 2 | Event creation & management                  | `event_db`        |
-| Registration Service | Student 3 | Student registration to events               | `registration_db` |
-| Notification Service | Student 4 | Sends notifications                          | (optional DB)     |
+| Service              | Responsibility                     | Database          |
+| -------------------- | ---------------------------------- | ----------------- |
+| Auth Service         | User authentication & JWT          | `auth_db`         |
+| Event Service        | Event management (CRUD)            | `event_db`        |
+| Registration Service | Event booking system               | `registration_db` |
+| Notification Service | Stores & serves user notifications | `notification_db` |
 
 ---
 
-# 🔁 3. Current System Status (WORKING)
+# 🌐 3. Frontend Application
 
-## ✅ Completed
+A React-based frontend provides a complete UI for both users and admins.
 
-### Auth Service
+### 👤 Student Features
 
-* User registration
-* Password hashing (pbkdf2_sha256)
-* JWT token generation
-* Role support (admin, student)
-* Connected to `auth_db`
+- View all events
+- Register for events
+- Prevent duplicate bookings
+- View **My Bookings (Profile page)**
+- View **Notifications (🔔 bell system)**
 
-### Event Service
+### 🛠 Admin Features
 
-* Admin-only event creation
-* JWT verification
-* Connected to `event_db`
-
-### Registration Service
-
-* JWT verification
-* Calls Event Service via REST
-* Prevents duplicate registration
-* Saves to `registration_db`
-
-### Docker Setup
-
-* 4 containers
-* 1 PostgreSQL container
-* Docker Compose orchestration
-* Internal service networking working
+- Create events
+- View all registrations (Admin Dashboard)
 
 ---
 
-# 🏗 4. Architecture Diagram (Conceptual)
+# 🔁 4. System Architecture
 
 ```
-Student/Admin
-     ↓
+Frontend (React)
+      ↓
 Auth Service → auth_db
-     ↓ (JWT)
+      ↓ (JWT)
 Event Service → event_db
-     ↓
+      ↓
 Registration Service → registration_db
-     ↓
-Notification Service
-```
-
-Each service:
-
-* Independent container
-* Own database
-* Communicates via REST
-
----
-
-# 💻 5. How Team Members Set Up Locally
-
----
-
-## 🔹 Step 1 – Install Requirements
-
-Each member must install:
-
-* Docker Desktop
-* Git
-
----
-
-## 🔹 Step 2 – Clone Repository
-
-```bash
-git clone <repo-url>
-cd Cloud-Based-Event-Management-System
+      ↓
+Notification Service → notification_db
 ```
 
 ---
 
-## 🔹 Step 3 – Start System
+# ⚙️ 5. Key Features (Completed)
+
+## 🔐 Authentication
+
+- JWT-based authentication
+- Role-based access (Admin / Student)
+- Secure password hashing
+
+## 📅 Event Management
+
+- Admin-only event creation
+- Event listing
+- Event validation via service-to-service call
+
+## 📝 Registration System
+
+- Register for events
+- Prevent duplicate registrations
+- Linked with Event Service
+- Stores registration timestamp
+
+## 🔔 Notification System
+
+- Triggered after successful registration
+- Stored in Notification Service
+- Retrieved via API
+- Displayed in frontend **notification bell**
+
+## 👤 Profile System
+
+- “My Bookings” page
+- Shows user-specific registrations
+- Fetches event details dynamically
+
+## 🛠 Admin Dashboard
+
+- View all registrations
+- Role-protected endpoint
+
+---
+
+# 🐳 6. Docker Architecture
+
+## Services Running
+
+| Service              | Port |
+| -------------------- | ---- |
+| Auth Service         | 8001 |
+| Event Service        | 8002 |
+| Registration Service | 8003 |
+| Notification Service | 8004 |
+| PostgreSQL           | 5432 |
+
+---
+
+## ▶ Run the System
 
 ```bash
+docker-compose down
 docker-compose up --build
 ```
 
-This will start:
+---
 
-* Auth → localhost:8001
-* Event → localhost:8002
-* Registration → localhost:8003
-* Notification → localhost:8004
-* PostgreSQL → port 5432
+## 🗄 Database Access
+
+```bash
+docker exec -it event_postgres psql -U admin
+```
 
 ---
 
-## 🔹 Step 4 – Create Databases (IMPORTANT FIRST TIME ONLY)
-
-Open new terminal:
-
-```bash
-docker exec -it <postgres-container-name> psql -U admin
-```
-
-Then run:
+## 🗄 Database Setup (First Time)
 
 ```sql
 CREATE DATABASE auth_db;
 CREATE DATABASE event_db;
 CREATE DATABASE registration_db;
-\q
-```
-
-Then restart:
-
-```bash
-docker-compose restart
+CREATE DATABASE notification_db;
 ```
 
 ---
 
-# 🗄 6. Database Connections
+# 🔁 7. Inter-Service Communication
 
-Each service connects using:
+### Flow:
 
-```python
-postgresql://admin:admin123@postgres:5432/<database_name>
 ```
-
-The hostname `postgres` works because Docker Compose provides internal DNS.
-
----
-
-# 👥 7. Member Responsibilities
-
----
-
-## 🧑‍💻 Student 1 – Auth Service
-
-Responsible for:
-
-* Secure password hashing
-* JWT creation
-* Role management
-* Token validation improvements
-* Move SECRET_KEY to environment variables
-
-Future tasks:
-
-* Add token verification endpoint
-* Improve security best practices
-* Add refresh tokens (optional)
-
----
-
-## 🧑‍💻 Student 2 – Event Service
-
-Responsible for:
-
-* Event CRUD operations
-* Admin-only protection
-* Capacity validation (IMPORTANT NEXT TASK)
-* Event update/delete endpoints
-
-Future tasks:
-
-* Add update event
-* Add delete event
-* Add pagination
-
----
-
-## 🧑‍💻 Student 3 – Registration Service
-
-Responsible for:
-
-* Register user to event
-* Prevent duplicate registration
-* Validate event existence
-* Capacity check (NEXT STEP)
-* Integrate Notification Service
-
-Future tasks:
-
-* Add cancellation endpoint
-* Track registration timestamp
-
----
-
-## 🧑‍💻 Student 4 – Notification Service
-
-Responsible for:
-
-* Implement `/notify` endpoint
-* Receive registration event
-* Simulate email sending
-* Log notifications
-
-Future tasks:
-
-* Integrate with Registration Service
-* Optionally use message broker
+User registers →
+Registration Service →
+Event Service (validate event) →
+Save registration →
+Notification Service →
+Store notification →
+Frontend fetches notification
+```
 
 ---
 
 # 🔐 8. Security Implementation
 
-Currently Implemented:
+### Implemented
 
-* Password hashing
-* JWT with expiration
-* Role-based authorization
-* Database isolation
-* Container isolation
+- JWT authentication
+- Role-based authorization
+- Password hashing
+- Service isolation
+- Database per service
 
-To Improve:
+### Improvements (Optional)
 
-* Move secrets to environment variables
-* Add HTTPS (cloud phase)
-* IAM roles in AWS
-* Security groups
-
----
-
-# 🔁 9. Inter-Service Communication
-
-Currently:
-
-Registration Service → calls Event Service via REST.
-
-Next:
-
-Registration Service → must call Notification Service after success.
-
-Example flow:
-
-```
-Registration → Event Service → DB Insert → Notification Service
-```
-
-This ensures full 4-service integration.
+- Move secrets to `.env`
+- HTTPS (deployment phase)
+- Token refresh mechanism
 
 ---
 
-# 📊 10. Testing Flow (For Demo)
+# 📊 9. Testing Flow (Demo Ready)
 
 ### Admin Flow
 
 1. Login as admin
 2. Create event
+3. View registrations in dashboard
 
 ### Student Flow
 
-1. Register student
+1. Register account
 2. Login
-3. Register for event
-
-### Verify
-
-1. Check `registration_db`
-2. Confirm stored data
+3. Browse events
+4. Register for event
+5. View **My Bookings**
+6. See **notification in bell 🔔**
 
 ---
 
-# ☁️ 11. Cloud Deployment Plan (Next Phase)
+# 🧠 10. Key Design Patterns Used
 
-Deployment Target: AWS ECS Fargate
+- Microservices architecture
+- Database per service
+- REST-based communication
+- JWT authentication
+- Role-based access control
+- Containerized deployment
 
-Flow:
+---
+
+# ☁️ 11. Deployment Plan (Remaining Work)
+
+The system is fully functional locally. Final step:
+
+## 🚀 Cloud Deployment (AWS)
+
+Planned using:
+
+- AWS ECS (Fargate)
+- Amazon ECR (Docker images)
+- GitHub Actions (CI/CD)
+
+### Deployment Flow
 
 ```
 GitHub Push
     ↓
-GitHub Actions
+CI/CD Pipeline
     ↓
-Build Docker Image
+Build Docker Images
     ↓
-Push to ECR
+Push to AWS ECR
     ↓
-Deploy to ECS
+Deploy via ECS
 ```
 
-Each service:
+---
 
-* Separate ECS task
-* Separate container
-* Separate DB connection
+# 📌 12. Remaining Work
+
+## 🔥 Final Task
+
+- Deploy system to cloud (AWS ECS)
+
+## Optional Enhancements
+
+- Event capacity validation
+- Notification read/unread status
+- Pagination for events
+- UI improvements
 
 ---
 
-# 📌 12. Remaining Work (Important)
-
-## 🔥 High Priority
-
-* Add capacity validation
-* Integrate Notification Service
-
-## 🔥 DevOps
-
-* Add GitHub Actions
-* Integrate SonarCloud
-* Add Docker image push automation
-
-## 🔥 Security
-
-* Move secrets to environment variables
-* Add .env support
-
----
-
-# 🎬 13. Final Demo Plan (10 Minutes)
+# 🎬 13. Final Demo Plan
 
 1. Show architecture diagram
-2. Show Docker running containers
-3. Show CI/CD pipeline
+2. Show running Docker containers
+3. Show frontend UI
 4. Admin creates event
 5. Student registers
-6. Show DB data
-7. Show notification
-8. Explain security measures
+6. Show booking in profile
+7. Show notification bell 🔔
+8. Show admin dashboard
+9. Explain microservice communication
 
 ---
 
-# 🏆 Current Project Level
+# 🏆 Final Project Status
 
-This system already demonstrates:
+✔ Full backend completed
+✔ Full frontend completed
+✔ Microservices fully integrated
+✔ Notification system implemented
+✔ Admin & user flows working
+✔ Dockerized system
 
-✔ Microservice architecture
-✔ Independent deployment
-✔ Secure authentication
-✔ Role-based access
-✔ Database per service pattern
-✔ Inter-service communication
-✔ Docker containerization
-
-This is strong assignment-level implementation.
+➡ Only deployment remains
 
 ---
 
-# 🚀 Next Recommended Step
+## Final Thought
 
-Now the team should:
+This is no longer just an assignment-level backend—it’s a **complete cloud-ready application** with real user interaction. The last step (deployment) will turn it into a **production-style system**.
 
-1️⃣ Add capacity validation
-2️⃣ Connect Notification Service
-3️⃣ Implement CI/CD
+---
 
+If you want, I can help you next with **AWS deployment step-by-step (ECS + ECR + GitHub Actions)** so you can finish the project fully.
