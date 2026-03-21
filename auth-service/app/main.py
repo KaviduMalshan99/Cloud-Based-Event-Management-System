@@ -30,10 +30,19 @@ app.add_middleware(
 # Database Setup
 # -----------------------------
 
-Base.metadata.create_all(bind=engine)
+try:
+    if engine:
+        Base.metadata.create_all(bind=engine)
+        print("DB tables created")
+except Exception as e:
+    print("Skipping DB setup:", e)
+
 
 
 def get_db():
+    if SessionLocal is None:
+        raise HTTPException(status_code=500, detail="Database not available")
+
     db = SessionLocal()
     try:
         yield db
