@@ -1,0 +1,42 @@
+name: Deploy Auth Service
+
+on:
+  push:
+    paths:
+      - 'auth-service/**'
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Login to ACR
+    - name: Login to ACR
+      run: |
+        docker login eventsystemacr.azurecr.io \
+        -u ${{ secrets.ACR_USERNAME }} \
+        -p ${{ secrets.ACR_PASSWORD }}
+
+    # Build image
+    - name: Build Image
+      run: |
+        docker build -t eventsystemacr.azurecr.io/auth-service ./auth-service
+
+    # Push image
+    - name: Push Image
+      run: |
+        docker push eventsystemacr.azurecr.io/auth-service
+
+    # Deploy using Azure CLI login (manual credentials)
+    - name: Azure Login (CLI)
+      run: |
+        az login --service-principal \
+          --username ${{ secrets.AZURE_CLIENT_ID }} \
+          --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+          --tenant ${{ secrets.AZURE_TENANT_ID }}
