@@ -11,8 +11,6 @@ IMAGE_NAME: auth-service
 jobs:
 build:
 runs-on: ubuntu-latest
-
-```
 steps:
   - name: Checkout repository
     uses: actions/checkout@v3
@@ -28,4 +26,4 @@ steps:
   - name: Push Docker Image
     run: |
       docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
-```
+
