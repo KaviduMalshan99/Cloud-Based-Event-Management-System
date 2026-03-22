@@ -5,7 +5,7 @@ import axios from "axios";
 ----------------------------- */
 
 export const authAPI = axios.create({
-  baseURL: "http://localhost:8001"
+  baseURL: "https://auth-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
 
@@ -14,7 +14,7 @@ export const authAPI = axios.create({
 ----------------------------- */
 
 export const eventAPI = axios.create({
-  baseURL: "http://localhost:8002"
+  baseURL: "https://event-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
 
@@ -23,7 +23,7 @@ export const eventAPI = axios.create({
 ----------------------------- */
 
 export const registrationAPI = axios.create({
-  baseURL: "http://localhost:8003"
+  baseURL: "https://registration-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
 
@@ -32,7 +32,7 @@ export const registrationAPI = axios.create({
 ----------------------------- */
 
 export const notificationAPI = axios.create({
-  baseURL: "http://localhost:8004"
+  baseURL: "https://notification-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
 
@@ -55,7 +55,6 @@ const attachToken = (api) => {
   });
 
 };
-
 
 /* Apply to secured services */
 
