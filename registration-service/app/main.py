@@ -2,12 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import requests
-
+import os
 from .database import engine, Base, SessionLocal
 from . import models, schemas
 from .security import verify_token
 
-
+EVENT_SERVICE_URL = os.getenv("EVENT_SERVICE_URL", "http://event-service:8000")
 # -----------------------------
 # App Initialization
 # -----------------------------
@@ -75,8 +75,8 @@ def register_event(
 
     try:
         event_response = requests.get(
-            f"http://event-service:8000/events/{data.event_id}",
-            timeout=5
+            f"{EVENT_SERVICE_URL}/events/{data.event_id}",
+            timeout=20
         )
     except requests.exceptions.RequestException as e:
         print("ERROR contacting Event Service:", e)
@@ -126,7 +126,7 @@ def register_event(
                 "user_email": user_email,
                 "message": f"You successfully registered for {event['title']}"
             },
-            timeout=5
+            timeout=20
         )
     except requests.exceptions.RequestException:
         print("Notification service unavailable")

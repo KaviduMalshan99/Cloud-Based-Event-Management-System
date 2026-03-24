@@ -7,6 +7,7 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: event_db
     ports:
       - "5432:5432"
     volumes:
@@ -18,6 +19,8 @@ services:
       - "8001:8000"
     depends_on:
       - postgres
+    environment:
+      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/event_db"
 
   event-service:
     build: ./event-service
@@ -25,6 +28,8 @@ services:
       - "8002:8000"
     depends_on:
       - postgres
+    environment:
+      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/event_db"
 
   registration-service:
     build: ./registration-service
@@ -32,11 +37,18 @@ services:
       - "8003:8000"
     depends_on:
       - postgres
+    environment:
+      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/event_db"
+      EVENT_SERVICE_URL: "https://event-service.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io"
 
   notification-service:
     build: ./notification-service
     ports:
       - "8004:8000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://admin:admin123@postgres:5432/event_db"
 
 volumes:
   postgres_data:
