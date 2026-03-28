@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .database import engine, Base, SessionLocal
 from . import models, schemas
 from .security import verify_token
-
+import requests
 
 app = FastAPI(title="Event Service")
 
@@ -76,6 +76,19 @@ def create_event(
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
+
+    # 🔥 ADD THIS BLOCK (Notification)
+    try:
+        requests.post(
+            "http://notification-service:8000/notify",
+            json={
+                "user_email": token_data.get("sub"),  # admin email
+                "message": f"New event '{new_event.title}' created successfully"
+            },
+            timeout=5
+        )
+    except:
+        print("Notification service not reachable")
 
     return new_event
 

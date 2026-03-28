@@ -121,7 +121,7 @@ def register_event(
 
     try:
         requests.post(
-            "http://notification-service:8004/notify",
+            "http://notification-service:8000/notify",
             json={
                 "user_email": user_email,
                 "message": f"You successfully registered for {event['title']}"

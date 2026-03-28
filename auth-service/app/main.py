@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
 from . import models, schemas, security
+import requests
 
 app = FastAPI(title="Auth Service")
 
@@ -96,6 +97,19 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
             "role": db_user.role
         }
     )
+
+    # 🔥 ADD NOTIFICATION HERE
+    try:
+        requests.post(
+            "http://notification-service:8000/notify",   # ✅ IMPORTANT (8000)
+            json={
+                "user_email": db_user.email,
+                "message": "You logged in successfully"
+            },
+            timeout=5
+        )
+    except:
+        print("Notification service not reachable")
 
     return {
         "access_token": access_token,
