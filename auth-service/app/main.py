@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -38,7 +38,6 @@ except Exception as e:
     print("Skipping DB setup:", e)
 
 
-
 def get_db():
     if SessionLocal is None:
         raise HTTPException(status_code=500, detail="Database not available")
@@ -49,8 +48,30 @@ def get_db():
     finally:
         db.close()
 
+
 # -----------------------------
-# Syatem Health
+# Auth Helpers
+# -----------------------------
+
+def get_current_user(authorization: str = Header(...)):
+    try:
+        token = authorization.split(" ")[1]
+        payload = security.verify_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return payload
+    except:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+
+def admin_required(user=Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+
+# -----------------------------
+# System Health
 # -----------------------------
 
 @app.get("/health")
@@ -132,15 +153,67 @@ def verify_token(token: str):
 
 
 # -----------------------------
-# Get All Users
+# Get All Users (Admin Only)
 # -----------------------------
 
 @app.get("/users")
-def get_users(db: Session = Depends(get_db)):
-
+def get_users(
+    db: Session = Depends(get_db),
+    user=Depends(admin_required)
+):
     users = db.query(models.User).all()
 
     if not users:
         return {"message": "No users found"}
 
     return users
+
+
+# -----------------------------
+# Update User (Admin Only)
+# -----------------------------
+
+@app.put("/users/{user_id}")
+def update_user(
+    user_id: int,
+    updated: schemas.UserCreate,
+    db: Session = Depends(get_db),
+    user=Depends(admin_required)
+):
+
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.username = updated.username
+    db_user.email = updated.email
+    db_user.role = updated.role
+    db_user.password = security.hash_password(updated.password)
+
+    db.commit()
+    db.refresh(db_user)
+
+    return {"message": "User updated successfully"}
+
+
+# -----------------------------
+# Delete User (Admin Only)
+# -----------------------------
+
+@app.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(admin_required)
+):
+
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(db_user)
+    db.commit()
+
+    return {"message": "User deleted successfully"}
