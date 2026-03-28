@@ -49,6 +49,14 @@ def get_db():
     finally:
         db.close()
 
+# -----------------------------
+# Syatem Health
+# -----------------------------
+
+@app.get("/health")
+def health():
+    return {"status": "Auth Service is running"}
+
 
 # -----------------------------
 # Register User
