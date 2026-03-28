@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
@@ -50,18 +51,21 @@ def get_db():
 
 
 # -----------------------------
-# Auth Helpers
+# Security (Swagger Authorize)
 # -----------------------------
 
-def get_current_user(authorization: str = Header(...)):
-    try:
-        token = authorization.split(" ")[1]
-        payload = security.verify_token(token)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return payload
-    except:
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
+security_scheme = HTTPBearer()
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)):
+    token = credentials.credentials
+
+    payload = security.verify_token(token)
+
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    return payload
 
 
 def admin_required(user=Depends(get_current_user)):
@@ -71,7 +75,7 @@ def admin_required(user=Depends(get_current_user)):
 
 
 # -----------------------------
-# System Health
+# Health Check
 # -----------------------------
 
 @app.get("/health")
@@ -153,7 +157,7 @@ def verify_token(token: str):
 
 
 # -----------------------------
-# Get All Users (Admin Only)
+# Get Users (Admin Only)
 # -----------------------------
 
 @app.get("/users")
@@ -161,12 +165,7 @@ def get_users(
     db: Session = Depends(get_db),
     user=Depends(admin_required)
 ):
-    users = db.query(models.User).all()
-
-    if not users:
-        return {"message": "No users found"}
-
-    return users
+    return db.query(models.User).all()
 
 
 # -----------------------------
