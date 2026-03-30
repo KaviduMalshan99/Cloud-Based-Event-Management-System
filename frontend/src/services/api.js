@@ -5,7 +5,18 @@ import axios from "axios";
 ----------------------------- */
 
 export const authAPI = axios.create({
-  baseURL: "https://auth-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
+  baseURL: "https://api-gateway.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io/api/auth"
+});
+
+// 🔥 ADD THIS
+authAPI.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 
