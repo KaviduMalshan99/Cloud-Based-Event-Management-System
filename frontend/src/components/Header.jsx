@@ -36,19 +36,25 @@ function Header() {
       const res = await notificationAPI.get("/notifications", {
         params: { user_email: user }
       });
-
-      // Show toast if new notification arrives
-      if (res.data.length > notifications.length) {
-        const latest = res.data[0];
-        setToast(latest.message);
-
-        setTimeout(() => {
-          setToast(null);
-        }, 3000);
+  
+      const data = res.data;
+  
+      if (data.length > 0) {
+        const latest = data[0];
+  
+        // ✅ show only if it's NEW
+        if (latest.id !== lastNotificationId) {
+          setToast(latest.message);
+          setLastNotificationId(latest.id);
+  
+          setTimeout(() => {
+            setToast(null);
+          }, 3000);
+        }
       }
-
-      setNotifications(res.data);
-
+  
+      setNotifications(data);
+  
     } catch (err) {
       console.log(err);
     }
