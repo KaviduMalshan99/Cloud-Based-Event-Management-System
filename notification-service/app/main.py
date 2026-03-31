@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
@@ -73,10 +73,13 @@ def send_notification(
 # -----------------------------
 @app.get("/notifications")
 def get_notifications(
-    user_email: str = Query(None),   # 👈 make optional
+    request: Request,
     db: Session = Depends(get_db)
 ):
     try:
+        # 🔥 manually extract query param
+        user_email = request.query_params.get("user_email")
+
         print("🔥 RECEIVED EMAIL:", user_email)
 
         if not user_email:
@@ -89,5 +92,5 @@ def get_notifications(
         return notifications
 
     except Exception as e:
-        print("❌ Error fetching notifications:", str(e))
+        print("❌ ERROR:", str(e))
         return []
