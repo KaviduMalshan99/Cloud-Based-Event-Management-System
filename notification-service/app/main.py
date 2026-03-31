@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal
@@ -33,7 +33,7 @@ def get_db():
 
 
 # -----------------------------
-# Health Check (IMPORTANT)
+# Health Check
 # -----------------------------
 @app.get("/")
 def root():
@@ -48,30 +48,46 @@ def send_notification(
     data: schemas.NotificationCreate,
     db: Session = Depends(get_db)
 ):
-    notification = models.Notification(
-        user_email=data.user_email,
-        message=data.message
-    )
+    try:
+        notification = models.Notification(
+            user_email=data.user_email,
+            message=data.message
+        )
 
-    db.add(notification)
-    db.commit()
-    db.refresh(notification)
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
 
-    print(f"Notification sent to {data.user_email}: {data.message}")
+        print(f"Notification sent to {data.user_email}: {data.message}")
 
-    return notification
+        return notification
+
+    except Exception as e:
+        db.rollback()
+        print("❌ Error creating notification:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to create notification")
 
 
 # -----------------------------
-# Get Notifications (Simplified)
+# Get Notifications (FIXED)
 # -----------------------------
 @app.get("/notifications")
 def get_notifications(
-    user_email: str,
+    user_email: str = Query(None),   # 👈 make optional
     db: Session = Depends(get_db)
 ):
-    notifications = db.query(models.Notification).filter(
-        models.Notification.user_email == user_email
-    ).order_by(models.Notification.id.desc()).all()
+    try:
+        print("🔥 RECEIVED EMAIL:", user_email)
 
-    return notifications
+        if not user_email:
+            return []
+
+        notifications = db.query(models.Notification).filter(
+            models.Notification.user_email == user_email
+        ).order_by(models.Notification.id.desc()).all()
+
+        return notifications
+
+    except Exception as e:
+        print("❌ Error fetching notifications:", str(e))
+        return []
