@@ -1,37 +1,29 @@
 import axios from "axios";
 
 /* -----------------------------
-   BASE URL
+   BASE URL (API Gateway)
 ----------------------------- */
 const BASE_URL = "https://api-gateway.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io";
 
 /* -----------------------------
-   AUTH SERVICE (via Gateway)
+   SERVICES (ALL via Gateway)
 ----------------------------- */
 export const authAPI = axios.create({
   baseURL: `${BASE_URL}/api/auth`
 });
 
-/* -----------------------------
-   EVENT SERVICE (unchanged)
------------------------------ */
 export const eventAPI = axios.create({
-  baseURL: "https://event-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
+  baseURL: `${BASE_URL}/api/events`
 });
 
-/* -----------------------------
-   REGISTRATION SERVICE (unchanged)
------------------------------ */
 export const registrationAPI = axios.create({
-  baseURL: "https://registration-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
+  baseURL: `${BASE_URL}/api/register`
 });
 
-/* -----------------------------
-   NOTIFICATION SERVICE (unchanged)
------------------------------ */
 export const notificationAPI = axios.create({
-  baseURL: "https://notification-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
+  baseURL: `${BASE_URL}/api/notify`
 });
+
 
 /* -----------------------------
    Attach JWT Token (GLOBAL)
@@ -48,8 +40,9 @@ const attachToken = (api) => {
   });
 };
 
+
 /* -----------------------------
-   Handle Unauthorized (Optional but useful)
+   Handle Unauthorized (GLOBAL)
 ----------------------------- */
 const handleAuthError = (api) => {
   api.interceptors.response.use(
@@ -57,6 +50,7 @@ const handleAuthError = (api) => {
     (err) => {
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
         window.location.href = "/login";
       }
       return Promise.reject(err);
@@ -64,12 +58,16 @@ const handleAuthError = (api) => {
   );
 };
 
+
 /* -----------------------------
    Apply Interceptors
 ----------------------------- */
-attachToken(authAPI);
-attachToken(eventAPI);
-attachToken(registrationAPI);
-attachToken(notificationAPI);
-
-handleAuthError(authAPI);
+[
+  authAPI,
+  eventAPI,
+  registrationAPI,
+  notificationAPI
+].forEach((api) => {
+  attachToken(api);
+  handleAuthError(api);
+});
