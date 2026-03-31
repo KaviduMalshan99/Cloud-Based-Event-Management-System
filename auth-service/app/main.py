@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import requests
 
 from .database import engine, Base, SessionLocal
 from . import models, schemas, security
@@ -9,15 +10,29 @@ app = FastAPI(title="Auth Service")
 
 
 # -----------------------------
-# CORS Configuration
+# Notification Service Config
 # -----------------------------
+NOTIFICATION_URL = "https://notification-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io/notify"
 
+
+def send_notification(user_email: str, message: str):
+    try:
+        response = requests.post(
+            NOTIFICATION_URL,
+            json={
+                "user_email": user_email,
+                "message": message
+            },
+            timeout=5
+        )
+        print(f"Notification sent: {response.status_code}")
+    except Exception as e:
+        print("Notification service error:", str(e))
 
 
 # -----------------------------
 # Database Setup
 # -----------------------------
-
 try:
     if engine:
         Base.metadata.create_all(bind=engine)
@@ -38,9 +53,8 @@ def get_db():
 
 
 # -----------------------------
-# Security (Swagger Authorize)
+# Security
 # -----------------------------
-
 security_scheme = HTTPBearer()
 
 
@@ -64,7 +78,6 @@ def admin_required(user=Depends(get_current_user)):
 # -----------------------------
 # Health Check
 # -----------------------------
-
 @app.get("/health")
 def health():
     return {"status": "Auth Service is running"}
@@ -73,7 +86,6 @@ def health():
 # -----------------------------
 # Register User
 # -----------------------------
-
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
@@ -95,13 +107,18 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
+    # 🔔 Send notification
+    send_notification(
+        user.email,
+        f"Welcome {user.username}! Your account has been created successfully."
+    )
+
     return {"message": "User registered successfully"}
 
 
 # -----------------------------
 # Login
 # -----------------------------
-
 @app.post("/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
@@ -117,6 +134,12 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         }
     )
 
+    # 🔔 Send notification
+    send_notification(
+        db_user.email,
+        f"Login successful. Welcome back, {db_user.username}!"
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -127,7 +150,6 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 # -----------------------------
 # Token Verification
 # -----------------------------
-
 @app.get("/verify-token")
 def verify_token(token: str):
 
@@ -146,7 +168,6 @@ def verify_token(token: str):
 # -----------------------------
 # Get Users (Admin Only)
 # -----------------------------
-
 @app.get("/users")
 def get_users(
     db: Session = Depends(get_db),
@@ -158,7 +179,6 @@ def get_users(
 # -----------------------------
 # Update User (Admin Only)
 # -----------------------------
-
 @app.put("/users/{user_id}")
 def update_user(
     user_id: int,
@@ -186,7 +206,6 @@ def update_user(
 # -----------------------------
 # Delete User (Admin Only)
 # -----------------------------
-
 @app.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
