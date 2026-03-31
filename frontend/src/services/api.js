@@ -1,60 +1,43 @@
 import axios from "axios";
 
 /* -----------------------------
-   AUTH SERVICE
+   BASE URL
 ----------------------------- */
-
-export const authAPI = axios.create({
-  baseURL: "https://api-gateway.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io/api/auth"
-});
-
-// 🔥 ADD THIS
-authAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
+const BASE_URL = "https://api-gateway.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io";
 
 /* -----------------------------
-   EVENT SERVICE
+   AUTH SERVICE (via Gateway)
 ----------------------------- */
+export const authAPI = axios.create({
+  baseURL: `${BASE_URL}/api/auth`
+});
 
+/* -----------------------------
+   EVENT SERVICE (unchanged)
+----------------------------- */
 export const eventAPI = axios.create({
   baseURL: "https://event-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
-
 /* -----------------------------
-   REGISTRATION SERVICE
+   REGISTRATION SERVICE (unchanged)
 ----------------------------- */
-
 export const registrationAPI = axios.create({
   baseURL: "https://registration-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
-
 /* -----------------------------
-   NOTIFICATION SERVICE
+   NOTIFICATION SERVICE (unchanged)
 ----------------------------- */
-
 export const notificationAPI = axios.create({
   baseURL: "https://notification-service.greenbay-a2b6478d.centralindia.azurecontainerapps.io"
 });
 
-
 /* -----------------------------
-   Attach JWT Token Automatically
+   Attach JWT Token (GLOBAL)
 ----------------------------- */
-
 const attachToken = (api) => {
-
   api.interceptors.request.use((config) => {
-
     const token = localStorage.getItem("token");
 
     if (token) {
@@ -62,13 +45,31 @@ const attachToken = (api) => {
     }
 
     return config;
-
   });
-
 };
 
-/* Apply to secured services */
+/* -----------------------------
+   Handle Unauthorized (Optional but useful)
+----------------------------- */
+const handleAuthError = (api) => {
+  api.interceptors.response.use(
+    (res) => res,
+    (err) => {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+      return Promise.reject(err);
+    }
+  );
+};
 
+/* -----------------------------
+   Apply Interceptors
+----------------------------- */
+attachToken(authAPI);
 attachToken(eventAPI);
 attachToken(registrationAPI);
 attachToken(notificationAPI);
+
+handleAuthError(authAPI);
