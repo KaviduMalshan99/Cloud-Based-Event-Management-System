@@ -10,6 +10,10 @@ function Header() {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // ✅ FIX: track last shown notification
+  const [lastNotificationId, setLastNotificationId] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
   // -----------------------------
   // Get user from token
   // -----------------------------
@@ -42,10 +46,15 @@ function Header() {
       if (data.length > 0) {
         const latest = data[0];
   
-        // ✅ show only if it's NEW
-        if (latest.id !== lastNotificationId) {
+        // 🔥 get last shown from localStorage
+        const storedId = localStorage.getItem("lastNotificationId");
+  
+        // ✅ show ONLY if new
+        if (storedId !== String(latest.id)) {
           setToast(latest.message);
-          setLastNotificationId(latest.id);
+  
+          // save new ID
+          localStorage.setItem("lastNotificationId", latest.id);
   
           setTimeout(() => {
             setToast(null);
@@ -61,7 +70,7 @@ function Header() {
   };
 
   // -----------------------------
-  // Load notifications when user is set
+  // Load when user is ready
   // -----------------------------
   useEffect(() => {
     if (user) {
@@ -80,7 +89,7 @@ function Header() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, lastNotificationId, initialized]);
 
   // -----------------------------
   // Logout
@@ -96,7 +105,7 @@ function Header() {
   return (
     <header style={styles.header}>
 
-      {/* Toast Notification */}
+      {/* 🔔 Toast (top-right popup) */}
       {toast && (
         <div style={styles.toast}>
           {toast}
@@ -185,7 +194,6 @@ function Header() {
 
 
 const styles = {
-
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -283,7 +291,6 @@ const styles = {
     cursor: "pointer"
   },
 
-  // 🔥 Toast popup style
   toast: {
     position: "fixed",
     top: "20px",
@@ -296,7 +303,6 @@ const styles = {
     zIndex: 999,
     fontSize: "14px"
   }
-
 };
 
 export default Header;
