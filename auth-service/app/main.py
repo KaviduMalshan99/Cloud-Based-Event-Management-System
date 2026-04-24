@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import requests
+import threading
 
 from .database import engine, Base, SessionLocal
 from . import models, schemas, security
@@ -122,11 +123,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.post("/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
+    # 🔍 Check user
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
 
     if not db_user or not security.verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # 🔐 Generate JWT token
     access_token = security.create_access_token(
         data={
             "sub": db_user.email,
@@ -134,12 +137,16 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         }
     )
 
-    # 🔔 Send notification
-    send_notification(
-        db_user.email,
-        f"Login successful. Welcome back, {db_user.username}!"
-    )
+    # 🔔 Send notification in background (NON-BLOCKING)
+    threading.Thread(
+        target=send_notification,
+        args=(
+            db_user.email,
+            f"Login successful. Welcome back, {db_user.username}!"
+        )
+    ).start()
 
+    # ✅ Return response immediately
     return {
         "access_token": access_token,
         "token_type": "bearer",
