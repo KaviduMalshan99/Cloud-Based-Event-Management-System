@@ -3,12 +3,24 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import requests
 import threading
+from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base, SessionLocal
 from . import models, schemas, security
 
 app = FastAPI(title="Auth Service")
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://cloudeventsystem.netlify.app",
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------
 # Notification Service Config
