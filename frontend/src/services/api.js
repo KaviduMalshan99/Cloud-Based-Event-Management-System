@@ -3,7 +3,7 @@ import axios from "axios";
 /* -----------------------------
    BASE URL (API Gateway)
 ----------------------------- */
-const BASE_URL = "https://api-gateway.ambitiousmeadow-e7af242d.southeastasia.azurecontainerapps.io";
+const BASE_URL = "https://cloud-event-api-gateway.greenbay-a2b6478d.centralindia.azurecontainerapps.io";
 
 /* -----------------------------
    SERVICES (ALL via Gateway)
