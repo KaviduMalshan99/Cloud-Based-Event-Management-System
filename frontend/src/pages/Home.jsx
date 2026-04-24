@@ -14,9 +14,9 @@ function Home(){
 
         <div style={styles.heroContent}>
 
-          <h1 style={styles.title}>
-            Cloud Event Management Platform
-          </h1>
+        <h1 style={styles.title}>
+          Cloud Event <span style={styles.highlight}>Management</span> Platform
+        </h1>
 
           <p style={styles.subtitle}>
             A modern microservice-based event platform powered by
@@ -157,6 +157,12 @@ page:{
   background:"radial-gradient(circle at top right, rgba(0,180,180,.2), transparent 40%), #0b1220",
   color:"#eaf6f6",
   fontFamily:"system-ui"
+},
+
+highlight:{
+  background:"linear-gradient(135deg,#0ea5a3,#3bd3c8)",
+  WebkitBackgroundClip:"text",
+  WebkitTextFillColor:"transparent"
 },
 
 hero:{
