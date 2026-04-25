@@ -26,7 +26,6 @@ function AdminEvents(){
     try{
 
       const res = await eventAPI.get("/");
-
       setEvents(res.data);
 
     }catch(err){
@@ -50,7 +49,7 @@ function AdminEvents(){
 
     try{
 
-      await eventAPI.post("/", form);
+      const eventsRes = await eventAPI.get("");
 
       alert("Event created successfully");
 
