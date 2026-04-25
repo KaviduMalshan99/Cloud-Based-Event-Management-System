@@ -25,7 +25,7 @@ function AdminEvents(){
 
     try{
 
-      const res = await eventAPI.get("/events");
+      const res = await eventAPI.get("/");
 
       setEvents(res.data);
 
@@ -50,7 +50,7 @@ function AdminEvents(){
 
     try{
 
-      await eventAPI.post("/events", form);
+      await eventAPI.post("/", form);
 
       alert("Event created successfully");
 
@@ -80,7 +80,7 @@ function AdminEvents(){
 
     try{
 
-      await eventAPI.delete(`/events/${id}`,{
+      await eventAPI.delete(`/${id}`,{
         headers:{
           Authorization:`Bearer ${token}`
         }
