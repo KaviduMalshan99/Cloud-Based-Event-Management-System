@@ -14,13 +14,14 @@ app = FastAPI(title="Event Service")
 # -----------------------------
 
 origins = [
-    "http://localhost:5173",  # Vite frontend
-    "http://127.0.0.1:5173"
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://cloudeventsystem.netlify.app"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,   # allow frontend
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,24 +32,24 @@ app.add_middleware(
 # Database Setup
 # -----------------------------
 
-try:
-    if engine:
-        Base.metadata.create_all(bind=engine)
-        print("DB tables created")
-except Exception as e:
-    print("Skipping DB setup:", e)
-
+Base.metadata.create_all(bind=engine)
 
 
 def get_db():
-    if SessionLocal is None:
-        raise HTTPException(status_code=500, detail="Database not available")
-
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+# -----------------------------
+# Health Check
+# -----------------------------
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "event-service"}
 
 
 # -----------------------------
@@ -61,7 +62,6 @@ def create_event(
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
-
     if token_data.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
@@ -95,11 +95,40 @@ def get_events(db: Session = Depends(get_db)):
 
 @app.get("/events/{event_id}", response_model=schemas.EventResponse)
 def get_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    return event
+
+
+# -----------------------------
+# Update Event (Admin only)
+# -----------------------------
+
+@app.put("/events/{event_id}", response_model=schemas.EventResponse)
+def update_event(
+    event_id: int,
+    event_update: schemas.EventUpdate,
+    db: Session = Depends(get_db),
+    token_data: dict = Depends(verify_token)
+):
+    if token_data.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
 
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
 
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    update_data = event_update.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(event, key, value)
+
+    db.commit()
+    db.refresh(event)
 
     return event
 
@@ -114,7 +143,6 @@ def delete_event(
     db: Session = Depends(get_db),
     token_data: dict = Depends(verify_token)
 ):
-
     if token_data.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 

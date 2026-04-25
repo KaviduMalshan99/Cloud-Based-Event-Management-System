@@ -16,7 +16,7 @@ function Events() {
 
     try {
 
-      const eventsRes = await eventAPI.get("/events");
+      const eventsRes = await eventAPI.get("/");
       setEvents(eventsRes.data);
 
       const token = localStorage.getItem("token");
