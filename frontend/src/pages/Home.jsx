@@ -16,7 +16,7 @@ function Home(){
         <div style={styles.heroContent}>
 
         <h1 style={styles.title}>
-          Cloud Event <span style={styles.highlight}>Management</span> Platform
+          Cloud Event <span style={styles.highlight}>Management</span> Platform New
         </h1>
 
           <p style={styles.subtitle}>

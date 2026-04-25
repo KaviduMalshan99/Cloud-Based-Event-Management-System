@@ -7,7 +7,10 @@ from .database import engine, Base, SessionLocal
 from . import models, schemas
 from .security import verify_token
 
-EVENT_SERVICE_URL = os.getenv("EVENT_SERVICE_URL", "http://event-service:8000")
+EVENT_SERVICE_URL = os.getenv(
+    "EVENT_SERVICE_URL",
+    "http://event-service:8000"  # internal only
+)
 # -----------------------------
 # App Initialization
 # -----------------------------

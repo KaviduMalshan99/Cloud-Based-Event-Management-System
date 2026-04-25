@@ -1,114 +1,88 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { eventAPI } from "../../services/api";
 
-function AdminEvents(){
+function AdminEvents() {
 
-  const [events,setEvents] = useState([]);
+  const [events, setEvents] = useState([]);
 
-  const [form,setForm] = useState({
-    title:"",
-    description:"",
-    location:"",
-    event_date:"",
-    capacity:""
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    event_date: "",
+    capacity: ""
   });
 
   const role = localStorage.getItem("role");
-  const token = localStorage.getItem("token");
 
-  useEffect(()=>{
+  useEffect(() => {
     loadEvents();
-  },[]);
+  }, []);
 
   const loadEvents = async () => {
-
-    try{
-
-      const res = await eventAPI.get("/");
+    try {
+      const res = await eventAPI.get("/");   // ✅ correct path
       setEvents(res.data);
-
-    }catch(err){
-
-      console.log(err);
-
+    } catch (err) {
+      console.error("Load events error:", err);
+      alert("Failed to load events");
     }
-
   };
 
   const handleChange = (e) => {
-
     setForm({
       ...form,
       [e.target.name]: e.target.value
     });
-
   };
 
   const createEvent = async () => {
-
-    try{
-
-      const eventsRes = await eventAPI.get("");
+    try {
+      await eventAPI.post("/", {
+        ...form,
+        capacity: Number(form.capacity)   // ✅ FIX 422 error
+      });
 
       alert("Event created successfully");
 
       setForm({
-        title:"",
-        description:"",
-        location:"",
-        event_date:"",
-        capacity:""
+        title: "",
+        description: "",
+        location: "",
+        event_date: "",
+        capacity: ""
       });
 
       loadEvents();
 
-    }catch(err){
-
-      alert("Event creation failed");
-      console.log(err.response?.data);
-    alert(err.response?.data?.detail || "Request failed");
-
+    } catch (err) {
+      console.error("Create error:", err);
+      alert(err.response?.data?.detail || "Event creation failed");
     }
-
   };
 
   const deleteEvent = async (id) => {
+    if (!window.confirm("Delete this event?")) return;
 
-    if(!window.confirm("Delete this event?")) return;
-
-    try{
-
-      await eventAPI.delete(`/${id}`,{
-        headers:{
-          Authorization:`Bearer ${token}`
-        }
-      });
-
+    try {
+      await eventAPI.delete(`/${id}`);   // ✅ correct path
       loadEvents();
-
-    }catch(err){
-
+    } catch (err) {
+      console.error("Delete error:", err);
       alert("Delete failed");
-
     }
-
   };
 
-  return(
-
+  return (
     <div style={styles.page}>
 
       <h1 style={styles.title}>Event Management</h1>
 
       {role === "admin" && (
-
         <div style={styles.card}>
-
           <h2 style={styles.cardTitle}>Create Event</h2>
 
           <div style={styles.formGrid}>
-
             <input
               style={styles.input}
               name="title"
@@ -141,7 +115,6 @@ function AdminEvents(){
               value={form.capacity}
               onChange={handleChange}
             />
-
           </div>
 
           <textarea
@@ -155,19 +128,14 @@ function AdminEvents(){
           <button style={styles.button} onClick={createEvent}>
             Create Event
           </button>
-
         </div>
-
       )}
 
       <div style={styles.card}>
-
         <h2 style={styles.cardTitle}>Events</h2>
 
         <table style={styles.table}>
-
           <thead>
-
             <tr>
               <th style={styles.th}>ID</th>
               <th style={styles.th}>Title</th>
@@ -176,54 +144,36 @@ function AdminEvents(){
               <th style={styles.th}>Capacity</th>
               <th style={styles.th}>Action</th>
             </tr>
-
           </thead>
 
           <tbody>
-
-            {events.map(e => (
-
+            {events.map((e) => (
               <tr key={e.id} style={styles.row}>
-
                 <td style={styles.td}>{e.id}</td>
-
                 <td style={styles.td}>{e.title}</td>
-
                 <td style={styles.td}>{e.location}</td>
-
                 <td style={styles.td}>{e.event_date}</td>
-
                 <td style={styles.td}>{e.capacity}</td>
 
                 <td style={styles.td}>
-
                   {role === "admin" && (
-
                     <button
                       style={styles.deleteBtn}
-                      onClick={()=>deleteEvent(e.id)}
+                      onClick={() => deleteEvent(e.id)}
                     >
                       Delete
                     </button>
-
                   )}
-
                 </td>
-
               </tr>
-
             ))}
-
           </tbody>
 
         </table>
-
       </div>
 
     </div>
-
   );
-
 }
 
 const styles = {
